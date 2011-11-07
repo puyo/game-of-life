@@ -2,28 +2,30 @@ require 'set'
 
 module Life
   class Universe
-    attr_reader :live_positions
-
     def initialize(live_positions = [])
       self.live_positions = live_positions
     end
 
     def tick!
       potential_birth_positions = Set.new
-      next_live_positions = live_positions.select do |position|
+      next_live_positions = live_positions.select{|position|
         live_neighbours, dead_neighbours = neighbours(position)
         potential_birth_positions.merge dead_neighbours
         live_neighbours.size == 2 or live_neighbours.size == 3
-      end
-      next_live_positions += potential_birth_positions.select do |position| 
+      }
+      next_live_positions.concat(potential_birth_positions.select{|position| 
         neighbours(position).first.count == 3
-      end
+      })
       self.live_positions = next_live_positions
       return self
     end
 
     def live?(position)
-      @is_alive[position]
+      @live_positions.include?(position)
+    end
+
+    def live_positions
+      @live_positions.to_a
     end
 
     private
@@ -45,22 +47,16 @@ module Life
     end
 
     def live_positions=(positions)
-      @live_positions = positions
-      build_is_alive_hash
-    end
-
-    def build_is_alive_hash
-      @is_alive = Hash.new(false)
-      @live_positions.each{|position| @is_alive[position] = true }
+      @live_positions = Set.new(positions)
     end
   end
 end
 
 if $0 == __FILE__
   def render(universe)
-    xs, ys = universe.live_positions.transpose
-    (ys.min..ys.max).each do |y|
-      (xs.min..xs.max).each do |x|
+    xs, ys = universe.live_positions.transpose.map{|series| series.min..series.max }
+    ys.each do |y|
+      xs.each do |x|
         print universe.live?([x, y]) ? 'o' : '.'
       end
       puts
